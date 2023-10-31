@@ -31,7 +31,7 @@ class Server {
 
     // Middleware de CORS y otros middlewares
     middlewares() {
-        const whitelist = ["http://localhost:5173"]; //https://generadordc3.com
+        const whitelist = ["https://generadordc3.com"]; //https://generadordc3.com
 
         const corsOptions = {
             origin: function (origin, callback) {
