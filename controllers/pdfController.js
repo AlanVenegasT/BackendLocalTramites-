@@ -8,7 +8,10 @@ const { S3 } = require("@aws-sdk/client-s3");
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage })
-const pdf = upload.single('archivo');
+const pdfS = upload.single('archivo');
+const pdf = require('html-pdf');
+const fs = require('fs');
+
 
 const s3Client = new S3({
     forcePathStyle: false,
@@ -26,17 +29,16 @@ const generarPdf = async (req, res) => {
     let tramite = null;
     let uploadResult = null;
     let pdfUrl = null;
-    let browser = null;
-    let page = null;
-
 
     const { id } = req.params;
 
+    const localPath = `carpeta_local/archivo-${id}.pdf`;
+    
     if (!id) {
         const response = new ResponseError(
             'fail',
             'Id del tramite no existe',
-            'Ingresa por favor el ID del tramite',
+            'Ingresa por favor el ID del trámite',
             []
         ).responseApiError();
         return res.status(400).json(response);
@@ -57,43 +59,11 @@ const generarPdf = async (req, res) => {
     } catch (ex) {
         const response = new ResponseError(
             'fail',
-            'Error el Tramite no se encontro, ingrese un ID valido',
+            'Error el Trámite no se encontró, ingrese un ID válido',
             ex.message,
             []).responseApiError();
 
-        res.status(404).json(
-            response
-        )
-    }
-
-
-    try {
-        browser = await puppeteer.launch({ 
-            headless: true });
-    } catch (ex) {
-        const response = new ResponseError(
-            'fail',
-            'Error al iniciar el navegador con Puppeteer',
-            ex.message,
-            []).responseApiError();
-
-        res.status(500).json(
-            response
-        )
-    }
-
-    try {
-        page = await browser.newPage();
-    } catch (ex) {
-        const response = new ResponseError(
-            'fail',
-            'Error al crear una nueva página',
-            ex.message,
-        []).responseApiError();
-
-        res.status(500).json(
-            response
-        )
+        res.status(404).json(response);
     }
     
     const contadorTramites = tramite.contadorTramites || null;
@@ -366,114 +336,78 @@ const generarPdf = async (req, res) => {
     </html>
     `;
 
-    try {
-        await page.setContent(htmlContent);   
-    } catch (ex) {
-        const response = new ResponseError(
-            'fail',
-            'Error al establecer el contenido HTML en la página',
-            ex.message,
-        []).responseApiError();
+    pdf.create(htmlContent).toBuffer(async (err, pdfBuffer) => {
+        if (err) {
+            const response = new ResponseError(
+                'fail',
+                'Error al generar el PDF desde HTML',
+                err.message,
+                []
+            ).responseApiError();
+            return res.status(500).json(response);
+        }
 
-        res.status(500).json(
-            response
-        )
-    }
+        const uploadParams = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: `PDFTramites/archivo-${id}.pdf`,
+            Body: pdfBuffer,
+            ACL: 'public-read',
+        };
 
-    const pdfBuffer = await page.pdf({
-        format: 'A4',
-        margin: {
-            top: '1cm',
-            right: '1cm',
-            bottom: '1cm',
-            left: '1cm'
-        },
-        printBackground: true,
-    });
+        try {
+            uploadResult = await s3Client.send(new PutObjectCommand(uploadParams));
+        } catch (ex) {
+            const response = new ResponseError(
+                'fail',
+                'Error al subir el archivo a Digital Ocean',
+                ex.message,
+                []
+            ).responseApiError();
 
-    // Parámetros para cargar el archivo en el depósito
-    const uploadParams = {
-        Bucket: process.env.BUCKET_NAME,
-        Key: `PDFTramites/archivo-${id}.pdf`,
-        Body: pdfBuffer,
-        ACL: 'public-read',
-    };
+            res.status(500).json(response);
+        }
 
-    // Subir el archivo utilizando el PutObjectCommand
-    try {
-        uploadResult = await s3Client.send(new PutObjectCommand(uploadParams));
-    } catch (ex) {
-        const response = new ResponseError(
-            'fail',
-            'Error al subir el archivo a Digital Ocean',
-            ex.message,
-            []).responseApiError();
+        try {
+            pdfUrl = `https://${process.env.BUCKET_NAME}.${process.env.S3_ENDPOINT_SINHTTP}/PDFTramites/archivo-${id}.pdf`;
+        } catch (ex) {
+            const response = new ResponseError(
+                'fail',
+                'Error al Generar el URL del PDF',
+                ex.message,
+                []
+            ).responseApiError();
 
-        res.status(500).json(
-            response
-        )
-    }
+            res.status(500).json(response);
+        }
 
-    try {
-        pdfUrl = `https://${process.env.BUCKET_NAME}.${process.env.S3_ENDPOINT_SINHTTP}/PDFTramites/archivo-${id}.pdf`;
-    } catch (ex) {
-        const response = new ResponseError(
-            'fail',
-            'Error al Generar el URL del PDF',
-            ex.message,
-            []).responseApiError();
+        if (tramite.reporte.length > 0) {
+            tramite.reporte[0].url = pdfUrl;
+            tramite.reporte[0].key = `archivo-${id}.pdf`;
+        } else {
+            tramite.reporte.push({
+                url: pdfUrl,
+                key: `archivo-${id}.pdf`,
+            });
+        }
 
-        res.status(500).json(
-            response
-        )
-    }
+        try {
+            await tramite.save();
+        } catch (ex) {
+            const response = new ResponseError(
+                'fail',
+                'Error al guardar el trámite',
+                ex.message,
+                []
+            ).responseApiError();
 
-
-
-    // Verifica si ya existe un reporte en la posición 0
-    if (tramite.reporte.length > 0) {
-        // Actualiza la URL y la key en el primer elemento de la matriz reporte
-        tramite.reporte[0].url = pdfUrl;
-        tramite.reporte[0].key = `archivo-${id}.pdf`;
-    } else {
-        // Si no existe un reporte en la posición 0, agrega uno nuevo
-        tramite.reporte.push({
-            url: pdfUrl,
-            key: `archivo-${id}.pdf`
-        });
-    }
-
-    try {
-        await tramite.save();
-    } catch (ex) {
-        const response = new ResponseError(
-            'fail',
-            'Error al guardar el tramite',
-            ex.message,
-            []).responseApiError();
-
-        res.status(500).json(
-            response
-        )
-    }
-
-
-    try {
-        await browser.close();
+            res.status(500).json(response);
+        }
 
         res.status(200).json({
             status: 'successful',
-            message: 'PDF generado y guardado en carpeta.'
+            message: 'PDF generado y guardado en carpeta.',
         });
-    } catch (ex) {
-        const response = new ResponseError(
-            'fail',
-            'Error generando el PDF',
-            ex.message,
-            []
-        ).responseApiError();
-        res.status(500).json(response);
-    }
+    });
 };
 
 const entrenamiendoNube = async (req, res) => {
@@ -544,5 +478,5 @@ const entrenamiendoNube = async (req, res) => {
 module.exports = {
     entrenamiendoNube,
     generarPdf,
-    pdf
+    pdfS
 };

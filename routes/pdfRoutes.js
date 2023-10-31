@@ -2,7 +2,7 @@ const { Router } = require("express")
 
 const  { generarPdf,
         entrenamiendoNube,
-        pdf}  = require('../controllers/pdfController')
+        pdfS}  = require('../controllers/pdfController')
 
 const { protect } = require ('../middlewares/auth-validar');  
 const { tieneRole } = require('../middlewares/validar-roles');
@@ -23,7 +23,7 @@ router.post('/:id',[
 router.post('/entrenamiento/cargarArchivo',[
         protect,
         tieneRole('ADMIN_ROLE', 'USER_ROLE'),
-],pdf, entrenamiendoNube)
+],pdfS, entrenamiendoNube)
 
 
 module.exports = router;
