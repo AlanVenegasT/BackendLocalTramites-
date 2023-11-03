@@ -339,6 +339,7 @@ const generarPdf = async (req, res) => {
             },
           }
     }).toBuffer(async (err, pdfBuffer) => {
+
         if (err) {
             const response = new ResponseError(
                 'fail',
@@ -358,6 +359,8 @@ const generarPdf = async (req, res) => {
 
         try {
             uploadResult = await s3Client.send(new PutObjectCommand(uploadParams));
+            console.log(uploadResult);
+            
         } catch (ex) {
             const response = new ResponseError(
                 'fail',
@@ -408,6 +411,7 @@ const generarPdf = async (req, res) => {
         res.status(200).json({
             status: 'successful',
             message: 'PDF generado y guardado en carpeta.',
+            url: pdfUrl,
         });
     });
 };
