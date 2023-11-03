@@ -1,12 +1,14 @@
 const sgMail = require('@sendgrid/mail');
+require('dotenv').config();
 const ResponseError = require('../utils/ResponseError');
+
 
 sgMail.setApiKey(process.env.APYKEYSENDGRID);
 
 const emailRegistroP = async (datos, res, req) => {
   const { correo, nombre, token } = datos;
 
-  const confirmarUrl = `https://generadordc3.com/confirmar/${token}`;
+  const confirmarUrl = `${process.env.SENGRID_URL}/confirmar/${token}`;
 
   const msg = {
     to: correo,
@@ -37,11 +39,11 @@ const emailRegistroP = async (datos, res, req) => {
 const emailOlvidePasswordP = async (datos, res) => {
   const { correo, nombre, token } = datos;
 
-  const olvideUrl = `https://generadordc3.com/olvide-password/${token}`;
+  const olvideUrl = `${process.env.SENGRID_URL}/login/olvide-password/${token}`;
 
   const msg = {
     to: correo,
-    from: 'iktanstrategies@iktanst.com',
+    from: 'alan4444v@gmail.com',
     subject: 'IKTAN - Restablece tu contraseña',
     text: 'Restablece tu contraseña',
     html: `<p>Hola: ${nombre}, has solicitado restablecer tu contraseña</p>

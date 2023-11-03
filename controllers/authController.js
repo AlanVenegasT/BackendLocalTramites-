@@ -284,7 +284,7 @@ const registrar = async (req, res) => {
     }
 
     
-    emailRegistro({
+    emailRegistroP({
         correo: usuario.correo,
         nombre: usuario.nombre,
         token: usuario.token,
@@ -413,7 +413,7 @@ const olvidePassword = async (req, res = response) => {
     try {
         await usuario.save();
         //enviar email
-        emailOlvidePassword({
+        emailOlvidePasswordP({
             correo: usuario.correo,
             nombre: usuario.nombre,
             token: usuario.token,

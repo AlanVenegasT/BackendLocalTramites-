@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const ResponseError = require('../utils/ResponseError');
+require('dotenv').config();
 
 const emailRegistro = async (datos) =>{
     const { correo, nombre, token } = datos;
@@ -16,7 +17,7 @@ const emailRegistro = async (datos) =>{
         }
       });
 
-      const confirmarUrl = `https://generadordc3.com/confirmar/${token}`;
+      const confirmarUrl = `${process.env.SENGRID_URL}/confirmar/${token}`;
 
       //Información del email
       const info = await transport.sendMail({
@@ -26,6 +27,7 @@ const emailRegistro = async (datos) =>{
         text: "Comprueba tu cuenta en DBMIND",
         html: `<p>Hola: ${nombre} Comprueba tu cuenta en DBMIND</p>
         <p>Tu cuenta ya esta casi lista, solo debes comprobarla en el siguiente enlace:
+
 
         <a href="${confirmarUrl}">Comprobar cuenta</a>
 
@@ -61,7 +63,7 @@ const emailOlvidePassword = async (datos) =>{
         }
     });
 
-    const olvideUrl = `https://generadordc3.com/login/olvide-password/${token}`;
+    const olvideUrl = `${process.env.SENGRID_URL}/login/olvide-password/${token}`;
 
     //Información del email
     const info = await transport.sendMail({

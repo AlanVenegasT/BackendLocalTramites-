@@ -1,4 +1,3 @@
-
 const puppeteer = require('puppeteer');
 const ResponseError = require('../utils/ResponseError');
 const mongoose = require('mongoose');
@@ -31,9 +30,6 @@ const generarPdf = async (req, res) => {
     let pdfUrl = null;
 
     const { id } = req.params;
-
-    const localPath = `carpeta_local/archivo-${id}.pdf`;
-    
     if (!id) {
         const response = new ResponseError(
             'fail',
@@ -336,7 +332,13 @@ const generarPdf = async (req, res) => {
     </html>
     `;
 
-    pdf.create(htmlContent).toBuffer(async (err, pdfBuffer) => {
+    pdf.create(htmlContent, {
+        childProcessOptions: {
+            env: {
+              OPENSSL_CONF: '/dev/null',
+            },
+          }
+    }).toBuffer(async (err, pdfBuffer) => {
         if (err) {
             const response = new ResponseError(
                 'fail',

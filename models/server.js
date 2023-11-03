@@ -31,7 +31,7 @@ class Server {
 
     // Middleware de CORS y otros middlewares
     middlewares() {
-        const whitelist = ["https://generadordc3.com"]; //https://generadordc3.com
+        const whitelist = [process.env.CORS]; //https://generadordc3.com
 
         const corsOptions = {
             origin: function (origin, callback) {
