@@ -147,11 +147,11 @@ const oneUser = getOne(Usuario);
 //Operaciones CRUD con los Usuarios.
 const usuariosGet = async (req = request, res = response) => {
   
-    const { limit = 4, page = 1 } = req.query;
+    const { limit = 10, page = 1 } = req.query;
     const parsedLimit = parseInt(limit);
     const parsedPage = parseInt(page);
     const skip = (parsedPage - 1) * parsedLimit;
-    const query = { estado: true };
+    const query = {  };  //Para nada más mostrar los verdaderos const query = { estado: true  };
 
   try {
     const [total, usuarios] = await Promise.all([
@@ -332,7 +332,7 @@ const usuariosDeleteP = async (req, res = response ) =>{
 
     if (usuarioEliminado.deletedCount === 0) {
       const response = new ResponseError(
-        'fial',
+        'fali',
         'Usuario no encontrado',
         'El usuario no se encuentra al realizar la busqueda',
         []).responseApiError();
