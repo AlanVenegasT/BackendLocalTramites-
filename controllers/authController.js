@@ -283,12 +283,12 @@ const registrar = async (req, res) => {
         )
     }
 
-    
-    emailRegistroP({
-        correo: usuario.correo,
-        nombre: usuario.nombre,
-        token: usuario.token,
-        });
+    //Se cancela el sendgrid ya que se mantendrá manual la confirmación de cuenta 
+    // emailRegistroP({
+    //     correo: usuario.correo,
+    //     nombre: usuario.nombre,
+    //     token: usuario.token,
+    //     });
             
 
     res.status(200).json({
