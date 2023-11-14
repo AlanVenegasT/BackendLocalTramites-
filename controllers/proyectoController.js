@@ -347,7 +347,8 @@ const cargarArchivoRequisito = async (req, res) => {
   }
 
   res.status(200).json({
-    msg: "Aquí se cargan los requisitos.",
+    status: "sucessful",
+    message: "Requisito cargado Correctamente",//Aquí se cargan los requisitos.
   });
 };
 
@@ -433,11 +434,62 @@ const borrarArchivoRequisito = async (req, res) => {
   });
 };
 
+const compartirProyecto = async (req, res) =>{
+  
+  const idUsuario = req.body.idUsuario;
+  const idProyecto = req.body.idProyecto;
+  let existeProyecto  = null;
+
+  if (!idUsuario ) {
+    const response = new ResponseError(
+      "fail",
+      "Selecciona un usuario",
+      "No se ha seleccionado ningun usuario, porfavor selecciona un usuario",
+      []
+    ).responseApiError();
+    return res.status(400).json(response);
+  }
+
+  console.log(idUsuario)
+
+  if (!idProyecto ) {
+    const response = new ResponseError(
+      "fail",
+      "Selecciona un proyecto",
+      "No se ha seleccionado ningun proyecto, porfavor selecciona un proyecto",
+      []
+    ).responseApiError();
+
+    return res.status(400).json(response);
+    
+  }
+
+  console.log("id usuario",idUsuario)
+
+  try {
+    existeProyecto = await Proyecto.findById({ _id: idProyecto })
+  } catch (error) {
+    const response = new ResponseError(
+      "fail",
+      "El proyecto no existe, porfavor ingresa un proyecto existente",
+      ex.message,
+      []
+    ).responseApiError();
+  }
+
+
+
+  res.status(200).json({
+    status: "sucessful",
+    message: "Se compartio correctamente el Proyecto",
+  })
+}
+
 ////////////////////USER///////////////////////////////////////
 //GET  POR ID Y USUARIO DE LA REQ.
 const misProyectos = async (req, res) => {
   const usuario = req.usuario;
-  const { id } = req.query;
+  const { id, page = 1, limit = 10 } = req.query;
 
   if (!usuario) {
     const response = new responseApiError(
@@ -450,44 +502,61 @@ const misProyectos = async (req, res) => {
     return res.status(404).json(response);
   }
 
-  if (id) {
-    const miProyecto = await Proyecto.findOne({ _id: id, usuario: usuario.id });
+  try {
+    let query = { usuario: usuario.id };
 
-    if (!miProyecto) {
-      const response = new ResponseError(
-        "fail",
-        "No existen proyectos",
-        "No cuentas con proyectos existentes, porfavor crea proyectos",
-        []
-      ).responseApiError();
+    if (id) {
+      query._id = id;
+      const miProyecto = await Proyecto.findOne(query);
 
-      return res.status(404).json(response);
+      if (!miProyecto) {
+        const response = new ResponseError(
+          "fail",
+          "No existen proyectos",
+          "No cuentas con proyectos existentes, porfavor crea proyectos",
+          []
+        ).responseApiError();
+
+        return res.status(404).json(response);
+      }
+
+      return res.status(200).json({
+        status: "sucessful",
+        data: miProyecto,
+        message: "Proyecto Encontrado Correctamente",
+      });
+    } else {
+      const totalProyectos = await Proyecto.countDocuments(query);
+      const skip = (page - 1) * limit;
+      const miProyecto = await Proyecto.find(query).skip(skip).limit(Number(limit));
+
+      if (!miProyecto || miProyecto.length === 0) {
+        const response = new ResponseError(
+          "fail",
+          "No existen proyectos",
+          "No cuentas con proyectos existentes, porfavor crea proyectos",
+          []
+        ).responseApiError();
+
+        return res.status(404).json(response);
+      }
+
+      return res.status(200).json({
+        status: "sucessful",
+        total: totalProyectos,
+        data: miProyecto,
+        message: "Proyectos Encontrados Correctamente",
+      });
     }
+  } catch (ex) {
+    const response = new ResponseError(
+      "fail",
+      "Error al realizar la búsqueda en la BD",
+      ex.message,
+      []
+    ).responseApiError();
 
-    res.status(200).json({
-      status: "sucessful",
-      data: miProyecto,
-      message: "Proyectos Encontrados Correctamente",
-    });
-  } else {
-    const miProyecto = await Proyecto.find({ usuario: usuario.id });
-
-    if (!miProyecto) {
-      const response = new ResponseError(
-        "fail",
-        "No existen proyectos",
-        "No cuentas con proyectos existentes, porfavor crea proyectos",
-        []
-      ).responseApiError();
-
-      return res.status(404).json(response);
-    }
-
-    res.status(200).json({
-      status: "sucessful",
-      data: miProyecto,
-      message: "Proyectos Encontrados Correctamente",
-    });
+    return res.status(500).json(response);
   }
 };
 //ACTUALIZAR MIS PROYECTOS
@@ -756,6 +825,7 @@ const borrarProyectos = async (req, res) => {
 module.exports = {
   cargarArchivoRequisito,
   crearProyecto,
+  compartirProyecto,
   mostrarProyectos,
   actualizarProyectos,
   borrarProyectos,

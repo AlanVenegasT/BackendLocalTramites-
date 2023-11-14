@@ -8,12 +8,14 @@ const { cargarArchivoRequisito,
         actualizarProyecto,
         borrarProyecto,
         archivo,
-        borrarArchivoRequisito } = require('../controllers/proyectoController')
+        borrarArchivoRequisito,
+        compartirProyecto } = require('../controllers/proyectoController')
 
 const { protect } = require('../middlewares/auth-validar');
 const { esAdminRole, tieneRole } = require('../middlewares/validar-roles');
 
 const router = Router();
+
 
 
 //RUTAS PARA TODOS
@@ -32,6 +34,9 @@ router.delete('/borrarArchivoRequisito/:idProyecto/:idRequisito',[
     // tieneRole('ADMIN_ROLE', 'USER_ROLE')
 ], borrarArchivoRequisito)
 
+router.post('/compartir',[
+
+],compartirProyecto )
 
 
 //USER
