@@ -136,6 +136,17 @@ const crearProyecto = async (req, res) => {
   const idtTramite = idt[0] ;
   const idtCompleto = await Tramite.findOne({ _id: idtTramite });
 
+  if (!idtCompleto || !idtCompleto.tramites) {
+    const response = new ResponseError(
+      "fail",
+      "Error al obtener el Tramite completo",
+      "No se encontró el Tramite o no tiene la propiedad 'tramites'",
+      []
+    ).responseApiError();
+  
+    return res.status(404).json(response);
+  }
+
   // Obtener requisitos como un array de objetos
   const requisitos = idtCompleto.tramites[48].valor 
     .split(";")
@@ -440,7 +451,7 @@ const compartirProyecto = async (req, res) =>{
   const idProyecto = req.body.idProyecto;
   let existeProyecto  = null;
 
-  if (!idUsuario ) {
+  if (!idUsuario || idUsuario.length === 0 ) {
     const response = new ResponseError(
       "fail",
       "Selecciona un usuario",
