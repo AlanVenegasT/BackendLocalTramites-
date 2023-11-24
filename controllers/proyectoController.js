@@ -133,7 +133,7 @@ const crearProyecto = async (req, res) => {
     return res.status(400).json(response);
   }
 
-  const idtTramite = idt[0] ;
+  const idtTramite = idt[0];
   const idtCompleto = await Tramite.findOne({ _id: idtTramite });
 
   if (!idtCompleto || !idtCompleto.tramites) {
@@ -143,12 +143,12 @@ const crearProyecto = async (req, res) => {
       "No se encontró el Tramite o no tiene la propiedad 'tramites'",
       []
     ).responseApiError();
-  
+
     return res.status(404).json(response);
   }
 
   // Obtener requisitos como un array de objetos
-  const requisitos = idtCompleto.tramites[48].valor 
+  const requisitos = idtCompleto.tramites[48].valor
     .split(";")
     .map((req) => ({ requisito: req.trim() })) || null;
   const fechaPrevencion = idtCompleto.tramites[41]?.valor || null; //Fecha de prevencion
@@ -336,11 +336,11 @@ const cargarArchivoRequisito = async (req, res) => {
 
   if (objetoEncontrado.archivoRequisito.length > 0) {
     objetoEncontrado.archivoRequisito[0].url = archivoUrl;
-    objetoEncontrado.archivoRequisito[0].key = `ArchivosRequisitos/archivo-${idRequisito}`;
+    objetoEncontrado.archivoRequisito[0].key = `ArchivosRequisitos/archivo-${idRequisito}.${extension}`;
   } else {
     objetoEncontrado.archivoRequisito.push({
       url: archivoUrl,
-      key: `ArchivosRequisitos/archivo-${idRequisito}`,
+      key: `ArchivosRequisitos/archivo-${idRequisito}.${extension}`,
     });
   }
 
@@ -445,56 +445,114 @@ const borrarArchivoRequisito = async (req, res) => {
   });
 };
 
-const compartirProyecto = async (req, res) =>{
-  
+const compartirProyecto = async (req, res) => {
   const idUsuario = req.body.idUsuario;
   const idProyecto = req.body.idProyecto;
-  let existeProyecto  = null;
+  let existeProyecto = null;
+  let existeUsuario = null;
 
-  if (!idUsuario || idUsuario.length === 0 ) {
+  if (!idUsuario || idUsuario.length === 0) {
     const response = new ResponseError(
       "fail",
       "Selecciona un usuario",
-      "No se ha seleccionado ningun usuario, porfavor selecciona un usuario",
+      "No se ha seleccionado ningun usuario, por favor selecciona un usuario",
       []
     ).responseApiError();
     return res.status(400).json(response);
   }
 
-  console.log(idUsuario)
-
-  if (!idProyecto ) {
+  if (!idProyecto) {
     const response = new ResponseError(
       "fail",
       "Selecciona un proyecto",
-      "No se ha seleccionado ningun proyecto, porfavor selecciona un proyecto",
+      "No se ha seleccionado ningun proyecto, por favor selecciona un proyecto",
       []
     ).responseApiError();
 
     return res.status(400).json(response);
-    
   }
 
-  console.log("id usuario",idUsuario)
-
   try {
-    existeProyecto = await Proyecto.findById({ _id: idProyecto })
+    existeUsuario = await Usuario.find({ _id: { $in: idUsuario } });
+    if (existeUsuario.length < idUsuario.length) {
+      const response = new ResponseError(
+        "warning",
+        "Algunos usuarios no existen en la Base de Datos",
+        "Algunos usuarios no fueron encontrados en la Base de Datos",
+        []
+      ).responseApiError();
+
+      return res.status(404).json(response);
+    }
   } catch (error) {
     const response = new ResponseError(
       "fail",
-      "El proyecto no existe, porfavor ingresa un proyecto existente",
+      "Error al buscar usuarios",
+      error.message,
+      []
+    ).responseApiError();
+    return res.status(500).json(response);
+  }
+
+  try {
+    existeProyecto = await Proyecto.findById(idProyecto);
+  } catch (ex) {
+    const response = new ResponseError(
+      "fail",
+      "El proyecto no existe, por favor ingresa un proyecto existente",
       ex.message,
       []
     ).responseApiError();
+
+    res.status(500).json(response);
   }
 
+  console.log("Existe Proyecto", existeProyecto);
+  console.log("Existe Usuarios", existeUsuario);
 
+  for (const usuario of existeUsuario) {
+    // Verifica si el proyecto ya pertenece al usuario actual
+    if (String(usuario._id) === String(existeProyecto.usuario)) {
+      console.error(`El proyecto ya pertenece al usuario ${usuario._id}`);
+      continue;  // Salta al siguiente usuario sin realizar la acción
+    }
+
+    // Crea una copia del proyecto eliminando el campo _id
+    const nuevoProyecto = { ...JSON.parse(JSON.stringify(existeProyecto)), _id: new ObjectId() };
+
+    // Modifica el campo usuario con el _id del usuario actual
+    nuevoProyecto.usuario = usuario._id;
+
+    try {
+      // Guarda la copia en la base de datos
+      await Proyecto.create(nuevoProyecto);
+    } catch (error) {
+      if (error.code === 11000) {
+        // const response = new ResponseError(
+        //   'fail',
+        //   `El proyecto ya existe para el usuario ${usuario._id}`,
+        //   `Seleccionaste un usuario con el proyecto ya creado, selecciona otro usuario.`,
+        // []).responseApiError();
+        // return res.status(11000).json(response)
+        console.error(`Proyecto ya existe para el usuario ${usuario._id}`);
+      } else {
+        const response = new ResponseError(
+          "fail",
+          "Error al guardar el proyecto para el usuario",
+          error.message,
+          []
+        ).responseApiError();
+
+        return res.status(500).json(response);
+      }
+    }
+  }
 
   res.status(200).json({
-    status: "sucessful",
-    message: "Se compartio correctamente el Proyecto",
-  })
-}
+    status: "successful",
+    message: "Se compartió correctamente el Proyecto",
+  });
+};
 
 ////////////////////USER///////////////////////////////////////
 //GET  POR ID Y USUARIO DE LA REQ.
@@ -663,6 +721,32 @@ const borrarProyecto = async (req, res) => {
     return res.status(400).json(response);
   }
 
+  const proyectoEncontrado = await Proyecto.findOne({ _id: id })
+
+  // console.log("Proyecto encontrado",proyectoEncontrado.requisitos[0].archivoRequisito[0])
+  // let proyectoVariables = proyectoEncontrado.requisitos[0].archivoRequisito[0];
+  // const {url, key} = proyectoVariables;
+  // console.log(url, key)
+
+  //Itera sobre cada requisito
+  for (let i = 0; i < proyectoEncontrado.requisitos.length; i++) {
+    //Accede al archivoRequisito en el subíndice 0 en cada requisito
+    const archivoRequisito = proyectoEncontrado.requisitos[i].archivoRequisito[0];
+    //Asigna valores vacíos a la URL y la KEY
+    // Verifica si archivoRequisito está definido antes de acceder a url y key
+    if (archivoRequisito) {
+      // console.log(archivoRequisito.url);
+      // console.log(archivoRequisito.key);
+      //BORRAR EL ARCHIVO DEL DIGITAL OCEAN
+      const uploadParams = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: `${archivoRequisito.key}`
+      };
+
+      const uploadResult = await s3Client.send(new DeleteObjectCommand(uploadParams));
+    }
+  }
+
   try {
     // Buscar el proyecto por su ID
     const proyectoEncontrado = await Proyecto.findOne({ _id: id });
@@ -802,6 +886,32 @@ const borrarProyectos = async (req, res) => {
     return res.status(400).json(response);
   }
 
+  const proyectoEncontrado = await Proyecto.findOne({ _id: id })
+
+  // console.log("Proyecto encontrado",proyectoEncontrado.requisitos[0].archivoRequisito[0])
+  // let proyectoVariables = proyectoEncontrado.requisitos[0].archivoRequisito[0];
+  // const {url, key} = proyectoVariables;
+  // console.log(url, key)
+
+  //Itera sobre cada requisito
+  for (let i = 0; i < proyectoEncontrado.requisitos.length; i++) {
+    //Accede al archivoRequisito en el subíndice 0 en cada requisito
+    const archivoRequisito = proyectoEncontrado.requisitos[i].archivoRequisito[0];
+    //Asigna valores vacíos a la URL y la KEY
+    // Verifica si archivoRequisito está definido antes de acceder a url y key
+    if (archivoRequisito) {
+      // console.log(archivoRequisito.url);
+      // console.log(archivoRequisito.key);
+      //BORRAR EL ARCHIVO DEL DIGITAL OCEAN
+      const uploadParams = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: `${archivoRequisito.key}`
+      };
+
+      const uploadResult = await s3Client.send(new DeleteObjectCommand(uploadParams));
+    }
+  }
+
   try {
     const proyectoEliminado = await Proyecto.deleteOne({ _id: id });
 
@@ -816,11 +926,13 @@ const borrarProyectos = async (req, res) => {
       return res.status(404).json(response);
     }
 
+
+
     res.status(200).json({
       status: "successful",
       message: "Proyecto eliminado correctamente",
     });
-    console.log("BORRADO");
+
   } catch (ex) {
     const response = new ResponseError(
       "fail",

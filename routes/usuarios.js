@@ -7,6 +7,7 @@ const { protect } = require("../middlewares/auth-validar");
 
 const {
   usuariosGet,
+  usuariosGetTrue,
   usuariosPut,
   usuariosDelete,
   usuariosDeleteP,
@@ -27,6 +28,8 @@ router.get(
   ],
   usuariosGet
 );
+
+router.get("/usuariosTrue",[protect],usuariosGetTrue);
 
 //Actualizar
 router.put(

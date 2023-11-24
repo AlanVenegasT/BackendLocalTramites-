@@ -19,7 +19,7 @@ const ProyectoSchema = Schema({
         type: String,
         required: [true, "El estado es obligatoria"],
         default: 'Pendiente',
-        emun: ['Pendiente','Iniciado','Concluido']
+        emun: ['Pendiente','Iniciado','Concluido', 'Activo', 'Requiere un Acción', 'Atrasado']
     },
     requisitos: [{
         requisito: {

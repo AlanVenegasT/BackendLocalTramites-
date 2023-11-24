@@ -42,7 +42,7 @@ const UsuarioSchema = Schema({
 
 //En este metodo saco los atributos que quiero sacar como el password
 UsuarioSchema.methods.toJSON = function(){
-    const { __v, password, _id, ...usuario } = this.toObject();
+    const { __v, _id, password, ...usuario } = this.toObject();
     usuario.uid = _id;
     return usuario;
 }

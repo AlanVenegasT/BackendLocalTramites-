@@ -180,6 +180,51 @@ const usuariosGet = async (req = request, res = response) => {
   }
 };
 
+const usuariosGetTrue = async (req = request, res = response) => {
+  const usuario = req.usuario;
+  const { limit = 10, page = 1 } = req.query;
+  const parsedLimit = parseInt(limit);
+  const parsedPage = parseInt(page);
+  const skip = (parsedPage - 1) * parsedLimit;
+  const query = { estado: true, _id: { $ne: usuario._id } }; // Excluir tu propio usuario
+
+  if (!usuario) {
+    const response = new responseApiError(
+      "fail",
+      "Usuario no encontrado, no te encuentras logueado",
+      "No estas logueado, por favor logueate",
+      []
+    ).responseApiError();
+
+    return res.status(404).json(response);
+  }
+
+  try {
+    const [total, usuarios] = await Promise.all([
+      Usuario.countDocuments(query),
+      Usuario.find(query)
+        .skip(skip)
+        .limit(parsedLimit),
+    ]);
+
+    res.status(200).json({
+      status: "successful",
+      total,
+      data: usuarios,
+      message: "Usuarios Registrados",
+    });
+  } catch (ex) {
+    const response = new ResponseError(
+      "fail",
+      "No se pudieron mostrar los usuarios",
+      ex.message,
+      []
+    ).responseApiError();
+
+    res.status(500).json(response);
+  }
+};
+
 const usuariosPut = async (req, res = response) => {
 
     let existeUsuario = null;
@@ -366,6 +411,7 @@ module.exports ={
     getMe,
     oneUser,
     usuariosGet,
+    usuariosGetTrue,
     usuariosPut,
     usuariosDelete,
     usuariosDeleteP,
