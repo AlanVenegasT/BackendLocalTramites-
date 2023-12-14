@@ -1,5 +1,5 @@
-
 const { Schema, model } = require('mongoose');
+const AccesoChat = require('./accesoChat');
 
 const UsuarioSchema = Schema({
     nombre: {
@@ -36,6 +36,14 @@ const UsuarioSchema = Schema({
     },
     token: {
         type: String,
+    },
+    accesoChat: {
+        type: AccesoChat,
+        default: {
+            acceso: false,
+            diasRestantes: 30,
+            intentos: 10,
+        }
     }
    
 });
