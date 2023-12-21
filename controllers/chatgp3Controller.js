@@ -5,10 +5,9 @@ const OpenAIApi = require("openai").OpenAIApi;
 const { ListObjectsV2Command, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { S3 } = require("@aws-sdk/client-s3");
 
-
-//Configuracion de Credenciales de OpenAI
+// Configuración de Credenciales de OpenAI
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY_NUEVA,
   organization: process.env.ORG_ID,
 });
 
@@ -21,8 +20,6 @@ const s3Client = new S3({
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
   }
 });
-
-
 
 // Crear una instancia de OpenAI
 const openai = new OpenAIApi(configuration);
@@ -48,7 +45,7 @@ const chatgp3L = async (req, res) => {
     const filteredObjects = listObjectsResponse.Contents.filter(obj => obj.Key === keyToFilter);
 
     // Imprimir la lista de objetos filtrados en la consola
-    console.log("Archivos filtrados por clave:", filteredObjects);
+    //console.log("Archivos filtrados por clave:", filteredObjects);
 
       // Crear parámetros para la solicitud de chat
       const response = await openai.createChatCompletion({
@@ -73,7 +70,6 @@ const chatgp3L = async (req, res) => {
           []
       ).responseApiError();
       res.status(500).json(response);
-      console.log(ex)
   }
 };
 
