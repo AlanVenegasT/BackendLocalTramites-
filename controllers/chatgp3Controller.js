@@ -1,53 +1,79 @@
-// En el archivo chatgp3L.js
-const ResponseError = require("../utils/ResponseError");
-const { LambdaClient, InvokeCommand } = require("@aws-sdk/client-lambda");
-const { imprimeCategoria } = require('../middlewares/category')
 
-const lambdaClient = new LambdaClient({
-  region: process.env.REGION,
-  credentials: {
-    accessKeyId: process.env.ACCESSKEYID,
-    secretAccessKey: process.env.SECRETACCESSKEY,
-  },
+const ResponseError = require("../utils/ResponseError");
+const Configuration = require("openai").Configuration;
+const OpenAIApi = require("openai").OpenAIApi;
+const { ListObjectsV2Command, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { S3 } = require("@aws-sdk/client-s3");
+
+
+//Configuracion de Credenciales de OpenAI
+const configuration = new Configuration({
+  apiKey: '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',
+  organization: 'org-AbYTNsJidaasVduSiWXL6fy6',
 });
+
+const s3Client = new S3({
+  forcePathStyle: false,
+  endpoint: process.env.S3_ENDPOINT, // Cambia la URL del endpoint
+  region: process.env.REGION_DO,
+  credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  }
+});
+
+
+
+// Crear una instancia de OpenAI
+const openai = new OpenAIApi(configuration);
 
 const chatgp3L = async (req, res) => {
   try {
-    const { prompt } = req.body;
+      const { prompt } = req.body;
 
-    const functionName = "GPT-3_5";
+      const listObjectsCommand = new ListObjectsV2Command({
+        Bucket: process.env.BUCKET_NAME,
+        // The default and maximum number of keys returned is 1000. This limits it to
+        // one for demonstration purposes.
+        MaxKeys: 20,
+      });
 
-    const params = {
-      FunctionName: functionName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify({ prompt }),
-    };
+      const listObjectsResponse = await s3Client.send(listObjectsCommand);
 
-    const command = new InvokeCommand(params);
-    const lambdaResponse = await lambdaClient.send(command);
+    // Imprimir la lista de objetos en la consola
+    //console.log("Archivos en el bucket:", listObjectsResponse.Contents);
 
-    const decoder = new TextDecoder("utf-8");
-    const decodedPayload = decoder.decode(lambdaResponse.Payload);
-    const respuesta = JSON.parse(decodedPayload);
+    // Filtrar los objetos por una clave específica (por ejemplo, "miKey")
+    const keyToFilter = 'ArchivosIA/';
+    const filteredObjects = listObjectsResponse.Contents.filter(obj => obj.Key === keyToFilter);
 
-    const recomendaciones = await imprimeCategoria(req, res, prompt);
+    // Imprimir la lista de objetos filtrados en la consola
+    console.log("Archivos filtrados por clave:", filteredObjects);
 
-    res.status(200).json({
-      status: "successful",
-      data: {
-        respuesta: respuesta,
-        recomendaciones: recomendaciones,
-      },
-    });
+      // Crear parámetros para la solicitud de chat
+      const response = await openai.createChatCompletion({
+          model: 'gpt-3.5-turbo',
+          messages:[
+            {role: "system", content: "You are a helpful assistant."},
+            {role: "user", content: prompt}
+          ],
+      });
+
+      res.status(200).json({
+          status: "succesfull",
+          data: {
+              respuesta: response.data.choices[0].message.content,
+          },
+      });
   } catch (ex) {
-    console.error(ex);
-    const response = new ResponseError(
-      "fail",
-      "Error al invocar la función Lambda",
-      ex.message,
-      []
-    ).responseApiError();
-    res.status(500).json(response);
+      const response = new ResponseError(
+          "fail",
+          "Error al realizar la pregunta ",
+          ex.message,
+          []
+      ).responseApiError();
+      res.status(500).json(response);
+      console.log(ex)
   }
 };
 

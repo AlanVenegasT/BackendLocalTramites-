@@ -10,6 +10,7 @@ const {
   usuariosGetTrue,
   usuariosPut,
   usuariosDelete,
+  usuarioGet,
   usuariosDeleteP,
 } = require("../controllers/usuarioController");
 
@@ -30,6 +31,8 @@ router.get(
 );
 
 router.get("/usuariosTrue",[protect],usuariosGetTrue);
+
+router.get("/usuario/:id", [protect],usuarioGet);
 
 //Actualizar
 router.put(

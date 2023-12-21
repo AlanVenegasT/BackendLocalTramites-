@@ -180,6 +180,42 @@ const usuariosGet = async (req = request, res = response) => {
   }
 };
 
+const usuarioGet = async (req = request, res = response) => {
+  const { id } = req.params;
+
+  if (!mongoose.isValidObjectId(id)) {
+    const response = new ResponseError(
+      'fail',
+      'ID inválido',
+      'El ID proporcionado no es válido',
+      []
+    ).responseApiError();
+
+    return res.status(400).json(response);
+  }
+
+  try {
+    existeUsuario = await Usuario.findById(id);
+  } catch (ex) {
+    const response = new ResponseError(
+      'fail',
+      `El id no existe ${ id }`,
+      ex.message,
+    []).responseApiError();
+
+    res.status(404).json(
+      response
+    )
+  }
+
+  res.status(200).json({
+    status: 'successful',
+    message: 'Usuario encontrado correctamente',
+    data: existeUsuario
+  });
+
+}
+
 const usuariosGetTrue = async (req = request, res = response) => {
   const usuario = req.usuario;
   const { limit = 10, page = 1 } = req.query;
@@ -411,6 +447,7 @@ module.exports ={
     getMe,
     oneUser,
     usuariosGet,
+    usuarioGet,
     usuariosGetTrue,
     usuariosPut,
     usuariosDelete,
