@@ -59,7 +59,7 @@ const chatgp3L = async (req, res) => {
       res.status(200).json({
           status: "succesfull",
           data: {
-              respuesta: response.data.choices[0].message.content,
+              respuesta: response.data.choices[0].message.content
           },
       });
   } catch (ex) {
