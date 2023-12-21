@@ -8,8 +8,8 @@ const { S3 } = require("@aws-sdk/client-s3");
 
 //Configuracion de Credenciales de OpenAI
 const configuration = new Configuration({
-  apiKey: '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',
-  organization: 'org-AbYTNsJidaasVduSiWXL6fy6',
+  apiKey: process.env.OPENAI_API_KEY,
+  organization: process.env.ORG_ID,
 });
 
 const s3Client = new S3({
