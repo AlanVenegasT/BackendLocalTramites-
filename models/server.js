@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { dbConnection } = require('../database/config'); 
+const { dbConnection } = require('../database/config.js'); 
 const cookieParser = require('cookie-parser');
 
 class Server {
@@ -31,24 +31,32 @@ class Server {
 
     // Middleware de CORS y otros middlewares
     middlewares() {
-        const whitelist = [process.env.CORS]; //https://generadordc3.com
+        // const whitelist = [process.env.CORS]; //https://generadordc3.com
 
+        // const corsOptions = {
+        //     origin: function (origin, callback) {
+        //         if (whitelist.includes(origin) || !origin) {
+        //             // Permitir el acceso desde el origen de la solicitud o si no se proporciona un origen (para peticiones locales)
+        //             callback(null, true);
+        //         } else {
+        //             // Configurar una respuesta con código 403 Forbidden para rechazar las solicitudes no permitidas
+        //             const error = new Error("Acceso no permitido desde este origen");
+        //             error.status = 403;
+        //             callback(error);
+        //         }
+        //     },
+        //     credentials: true, // Permitir el envío de credenciales (por ejemplo, cookies) desde el cliente
+        // };
+
+        // // CORS
+        // this.app.use(cors(corsOptions));
         const corsOptions = {
             origin: function (origin, callback) {
-                if (whitelist.includes(origin) || !origin) {
-                    // Permitir el acceso desde el origen de la solicitud o si no se proporciona un origen (para peticiones locales)
-                    callback(null, true);
-                } else {
-                    // Configurar una respuesta con código 403 Forbidden para rechazar las solicitudes no permitidas
-                    const error = new Error("Acceso no permitido desde este origen");
-                    error.status = 403;
-                    callback(error);
-                }
+                // Permitir todo mientras desarrollas
+                callback(null, true);
             },
-            credentials: true, // Permitir el envío de credenciales (por ejemplo, cookies) desde el cliente
+            credentials: true,
         };
-
-        // CORS
         this.app.use(cors(corsOptions));
 
         // Cookies 
@@ -66,13 +74,13 @@ class Server {
     routes() {
         // Vamos a usar un middleware para otorgarle ciertas rutas
         // Contiene middleware se llama al archivo donde tenemos las rutas
-        this.app.use(this.authPath, require('../routes/authRoutes'));
-        this.app.use(this.usuariosPath, require('../routes/usuarios'));
-        this.app.use(this.chatgp3Path, require('../routes/chatgp3Routes'));
-        this.app.use(this.tramiteControllerPath, require('../routes/tramiteRoutes'));
-        this.app.use(this.proyectoPath, require('../routes/proyectoRoutes'));
+        this.app.use(this.authPath, require('../routes/authRoutes.js'));
+        this.app.use(this.usuariosPath, require('../routes/usuarios.js'));
+        this.app.use(this.chatgp3Path, require('../routes/chatgp3Routes.js'));
+        this.app.use(this.tramiteControllerPath, require('../routes/tramiteRoutes.js'));
+        this.app.use(this.proyectoPath, require('../routes/proyectoRoutes.js'));
         this.app.use(this.pdfPath, require('../routes/pdfRoutes.js'));
-        this.app.use(this.recomendacionPath, require('../routes/recomendacionRoutes'))
+        this.app.use(this.recomendacionPath, require('../routes/recomendacionRoutes.js'))
 
 
         // Middleware para manejar rutas no reconocidas
